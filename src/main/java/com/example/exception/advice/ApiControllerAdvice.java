@@ -43,7 +43,6 @@ public class ApiControllerAdvice {
             String message = field.getDefaultMessage();
             String value = field.getRejectedValue().toString();
 
-            System.out.println("---------");
             System.out.println(fieldName);
             System.out.println(message);
             System.out.println(value);
@@ -64,13 +63,12 @@ public class ApiControllerAdvice {
         errorResponse.setStatusCode(HttpStatus.BAD_REQUEST.toString());
         errorResponse.setResultCode("FAIL");
 
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     @ExceptionHandler(value = ConstraintViolationException.class)
-    public ResponseEntity constraintViolationException(ConstraintViolationException e){
-
+    public ResponseEntity constraintViolationException(ConstraintViolationException e, HttpServletRequest httpServletRequest){
+        List<Error> errorList = new ArrayList<>();
         e.getConstraintViolations().forEach(error -> {
 
             Stream<Path.Node> stream = StreamSupport.stream(error.getPropertyPath().spliterator(), false);
@@ -80,30 +78,43 @@ public class ApiControllerAdvice {
             String message = error.getMessage();
             String invalidValue = error.getInvalidValue().toString();
 
-            System.out.println("-----------");
-            System.out.println(field);
-            System.out.println(message);
-            System.out.println(invalidValue);
+            Error errorMessage = new Error();
+            errorMessage.setField(field);
+            errorMessage.setMessage(message);
+            errorMessage.setInvalidValue(invalidValue);
 
-
-            System.out.println(error);
+            errorList.add(errorMessage);
         });
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setErrorList(errorList);
+        errorResponse.setMessage("");
+        errorResponse.setRequestUrl(httpServletRequest.getRequestURI());
+        errorResponse.setStatusCode(HttpStatus.BAD_REQUEST.toString());
+        errorResponse.setResultCode("FAIL");
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     @ExceptionHandler(value = MissingServletRequestParameterException.class)
-    public ResponseEntity missingServletRequestParameterException(MissingServletRequestParameterException e){
+    public ResponseEntity missingServletRequestParameterException(MissingServletRequestParameterException e, HttpServletRequest httpServletRequest){
+
+        List<Error> errorList = new ArrayList<>();
 
         String fieldName = e.getParameterName();
-        String fieldType = e.getParameterType();
         String invalidValue = e.getMessage();
 
-        System.out.println(fieldName);
-        System.out.println(fieldType);
-        System.out.println(invalidValue);
+        Error errorMessage = new Error();
+        errorMessage.setField(fieldName);
+        errorMessage.setMessage(e.getMessage());
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setErrorList(errorList);
+        errorResponse.setMessage("");
+        errorResponse.setRequestUrl(httpServletRequest.getRequestURI());
+        errorResponse.setStatusCode(HttpStatus.BAD_REQUEST.toString());
+        errorResponse.setResultCode("FAIL");
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
 //    @ExceptionHandler(value = Exception.class)
